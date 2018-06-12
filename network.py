@@ -38,16 +38,17 @@ prediction = neural(x)
 cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=prediction,labels=y))
 optimizer = tf.train.AdamOptimizer().minimize(cost)
 hm_epochs = 10
-    
+init_vars = tf.global_variables_initializer()
+saver = tf.train.Saver()
+
 def rgb_to_greyscale(pixels):
     r, g, b, a = pixels
     return .2126 * (r / 255) + .7152 * (g / 255) + 0.0722 * (b/255)
 
 def train(x):
-    iv = tf.global_variables_initializer()
+    
     with tf.Session() as sess:
-        sess.run(iv)
-        saver = tf.train.Saver()
+        sess.run(init_vars)
         for epoch in range(hm_epochs):
             epoch_loss = 0
             for _ in range(int(mnist.train.num_examples / batch_size)):
@@ -62,7 +63,7 @@ def train(x):
 
 def test():
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
+        sess.run(init_vars)
         saver = tf.train.Saver()
         saver.restore(sess, './checkpoint/mnist.ckpt')
         for i in range(10):
