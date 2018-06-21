@@ -3,7 +3,7 @@ import numpy as np
 from tensorflow.contrib import rnn
 from tensorflow.examples.tutorials.mnist import input_data
 from PIL import Image
-
+from tqdm import *
 mnist = input_data.read_data_sets("/tmp/data/", one_hot=True)
 
 hm_epochs = 10
@@ -45,7 +45,7 @@ def train(x):
         saver = tf.train.Saver()
         for epoch in range(hm_epochs):
             epoch_loss = 0
-            for _ in range(int(mnist.train.num_examples / batch_size)):
+            for _ in trange(int(mnist.train.num_examples / batch_size)):
                 epoch_x, epoch_y = mnist.train.next_batch(batch_size)
                 epoch_x = epoch_x.reshape((batch_size, n_chunks, chunk_size))
 
@@ -53,9 +53,11 @@ def train(x):
                 _, c = sess.run([optimizer, cost], feed_dict={x: epoch_x, y: epoch_y})
                 epoch_loss += c
             print('Epoch', epoch, 'completed out of', hm_epochs, 'loss:',epoch_loss)
-        correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
-        accuracy = tf.reduce_mean(tf.cast(correct,'float'))
-        print('Accuracy:', accuracy.eval({x:mnist.test.images.reshape((-1, n_chunks, chunk_size)), y:mnist.test.labels}))
+            correct = tf.equal(tf.argmax(prediction, 1), tf.argmax(y, 1))
+            accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
+            print('Accuracy:',
+                  accuracy.eval({x: mnist.test.images.reshape((-1, n_chunks, chunk_size)), y: mnist.test.labels}))
+4
         saver.save(sess, './checkpoint/rnn.ckpt')
 
 def test():
@@ -72,5 +74,5 @@ def test():
             if i != result[0]:
                img.show()
 
-#train(x)
+train(x)
 test()
