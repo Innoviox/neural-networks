@@ -14,15 +14,12 @@ x = tf.placeholder('float', [None, in_classes])
 y = tf.placeholder('float')
 r = lambda *d: tf.Variable(tf.random_normal(d))
 
-def neural(data, n_nodes, f=tf.nn.relu):
-    layers = [{'weights': r(a, b), 'biases': r(b), 'f': c} for a, b, c in
-              zip([in_classes]+n_nodes,
-                  n_nodes+[out_classes],
-                  [f for _ in n_nodes]+[lambda _:_])]
+def neural(data, n_nodes, fn=tf.nn.relu):
+    layers = [{'weights': r(a, b), 'biases': r(b)} for a, b in
+              zip([in_classes]+n_nodes, n_nodes+[out_classes])]
     calc = data
-    for l in layers:
-        calc = l['f'](tf.add(tf.matmul(calc, l['weights']), l['biases']))
-
+    for l, f in zip(layers, [fn for _ in n_nodes]+[lambda _:_]):
+        calc = f(tf.add(tf.matmul(calc, l['weights']), l['biases']))
     return calc
 
 prediction = neural(x, n_nodes)
@@ -50,6 +47,10 @@ def train(x):
             print('Accuracy:', accuracy.eval({x:mnist.test.images, y:mnist.test.labels}))
         saver.save(sess, './checkpoint/mnist.ckpt')
 
+def calc_chance(arr):
+    s = sum(arr[0])
+    return {i: j/s for i, j in enumerate(arr[0])}
+
 def test():
     with tf.Session() as sess:
         sess.run(init_vars)
@@ -59,8 +60,12 @@ def test():
             img = Image.open("test/{}.png".format(i))
             features = np.array(list(map(rgb_to_greyscale, img.getdata())))
 
-            result = sess.run(tf.argmax(prediction.eval(feed_dict={x: [features]}), 1))
+            arr = prediction.eval(feed_dict={x: [features]})
+            result = sess.run(tf.argmax(arr, 1))
+            # print()
+            for i, j in calc_chance(arr).items():
+                print(f"\tChance of {i}: {j*100}%")
             print(i, result[0])
 
-train(x)
+#train(x)
 test()
